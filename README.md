@@ -1,76 +1,30 @@
-# Media-Asset-Migration
-A script for migrating data from one media asset management (MAM) system to another.
+# Media Metadata Migration
 
-## Description
-The script takes user input and calls a set of modules to perform a data migration 
-from one MAM system to another. In this script data is moved from [Gorilla EFCS](https://www.gorilla-technology.com/) and [DIVAArchive](https://www.goecodigital.com) to the [Dalet Galaxy](https://www.dalet.com/) MAM. 
-An SQLite DB is used to store the metadata and the migration status for each asset. 
+This project aims to facilitate the migration of media metadata from one system to another. It provides a set of tools and utilities to extract, transform, and load media metadata in a seamless and efficient manner.
 
-The script follows the a series of steps: 
+## Features
 
+- Extract metadata from various media formats, including images, videos, and audio files.
+- Transform metadata into a standardized format for easy migration.
+- Load migrated metadata into the target system with minimal effort.
+- Support for batch processing to handle large volumes of media files.
 
-1. Query the two separate dbs (Gorilla and DIVA), export the data to two seperate CSV files.
-2. Use Pandas to merge the query results based on a common field, and export to a new csv.
-3. Parse the merged data for rows that contain certain string patterns. </br>
-	The string patterns are specific to the data that needs to migrate. </br>
-	Export a new csv of the parsed data. 
-4. Clean the parsed data. A metaxml field containing mediainfo is split
-	out into 7 new columns, </br> and the data from the XML elements is used to
-	populate the newly created columns. </br>
-	The bad data from the XML is dropped, some incorrect data is fixed, and empty values are marked as NULL. </br> 
-	If metadata is missing, a best-guess is attempted based on the filename information. </br> 
-	If that is not possible or unsucessful, the field is marked Null. 
-	After the info is split out into seperate columns, </br>
-	the original metaxml column is dropped, and the data is moved into a SQL DB. 
-5. There is an optional step to crosscheck all exported data against the information in the DB, </br>
-	to ensure assets are not migrated more than once. 
-6. Based on the user input, a number of XMLs are exported from the DB. 
-7. Optional step to also export the corresponding proxy file along with the XML. </br>
-	Proxies are exported only for assets with the titletype = 'video'. </br>
-	Assets with the titletype = 'archive' assets do not have a proxy to export. 
- 
+## Installation
+
+To use this project, follow these steps:
+
+1. Clone the repository: `git clone https://github.com/scuc/Media-Metadata-Migration.git`
+2. Install dependencies using pipenv:  `pipenv install`
+3. Configure the config.yaml with any required paths or db info
 
 
-## Prerequisites 
+## Usage
+1. Run the full script from `python main.py` or an individual module: `python module-name.py`
 
-* Python 3.6 or higher
-* [pandas](https://pandas.pydata.org) 
-* [cx_Oracle](https://oracle.github.io/python-cx_Oracle/)
-* [SQLite](https://www.sqlite.org/download.html)
+## Contributing
 
-## Files Included
+Contributions are welcome! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request.
 
-* `main.py`
-* `user_input.py`
-* `config.py`
-* `gorilla_oracle_query.py`
-* `diva_oracle_query.py`
-* `merge_dbs.py`
-* `csv_parse.py`
-* `csv_clean.py`
-* `crosscheck_assets.py`
-* `update_db.py`
-* `create_xml.py`
-* `get_proxy.py`
-* `logging.yaml `
+## License
 
-
-## Getting Started
-
-* Install prerequisities 
-* Create a `config.yaml` document with the format: 
-&nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; paths: &nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; root_path:&nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; oracle-db-gor:&nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; user:&nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; pass:&nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; url: &nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; oracle-db-diva: &nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; user:  &nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; pass:  &nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; url:  &nbsp;   &nbsp;   &nbsp;   &nbsp;   &nbsp;  
-
+This project is licensed under the [MIT License](LICENSE).
