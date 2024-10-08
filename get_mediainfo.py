@@ -155,20 +155,24 @@ def get_framerate(df_row):
     Match the framerate of a file using the info in the filename.
     """
     framerate_match = re.search(
-        r"(?<![0-9]|[A-Z])(23|25|29|59)\.?((98|976|97|94)(?=[IP]?))?|(?<=(-|_))(NTSC|PAL)(?=(-|_)?)|(?<=(-|_))(24P|720P)(?=(-|_)?)",
+        r"(?<![0-9A-Z])(?:23(?:\.?98|\.?976|\.?97|\.?94)?|25|29(?:\.?97)?|59(?:\.?94)?|NTSC|PAL|24P|720P)(?=[IPip]?)(?=(-|_)?)",
         df_row["NAME"][6:],
     )
 
-    framerate_value = framerate_match.group(0) if framerate_match else "NULL"
+    framerate_value = framerate_match.group(0) if framerate_match else "00"
     framerate_map = {
-        "2398": "23.98",
+        "23": "23.98",
         "23976": "23.976",
+        "2398": "23.98",
+        "24P": "24",
+        "25": "25",
+        "29": "29.97",
         "2997": "29.97",
+        "59": "59.94",
         "5994": "59.94",
+        "720P": "59.94",
         "NTSC": "29.97",
         "PAL": "25",
-        "24P": "24",
-        "720P": "59.94",
     }
     framerate = framerate_map.get(framerate_value, framerate_value)
     logger.info(
@@ -182,6 +186,20 @@ def est_resolution(df_row, codec_value):
     """
     Estimate the resolution based on filesize and codec.
     """
+    resolution_match = re.search(
+        r"(?:525|625|720|1080|1080|2160)(?=[IPipKk]?)(?=(-|_)?)",
+        df_row["NAME"],
+    )
+
+    resolution_map = {
+        "525": ["720", "486"],
+        "625": ["720", "576"],
+        "720": ["1280", "720"],
+        "1080": ["1920", "1080"],
+        "2160": ["3840", "2160"],
+        "IMX50": ["720", "486"],
+    }
+
     filesize = int(df_row["FILESIZE"])
     if (
         18000000000 < filesize < 200000000000
@@ -203,12 +221,18 @@ def est_resolution(df_row, codec_value):
         or "_xdcamhd_" in df_row["NAME"].lower()
     ):
         v_width, v_height = "1920", "1080"
+
+    elif resolution_match and codec_value not in ["XAVC", "UHD"]:
+        resolution_value = resolution_match.group(0)
+        v_width, v_height = resolution_map.get(resolution_value, ["00", "00"])
+
     else:
         v_width, v_height = "NULL", "NULL"
         logger.info(
             f"{df_row['GUID']} - {df_row['NAME']} - Cannot determine v_width or v_height, setting to Null."
         )
 
+    print(v_height, v_width)
     return v_width, v_height
 
 
@@ -231,7 +255,7 @@ def prettify_xml(elem):
 
 if __name__ == "__main__":
     df_row_example = {
-        "NAME": "example_name",
+        "NAME": "051637_AIRPORTSECURITY2.5_EPISODE1080_2997I_PRORESHQ_TEXTLESS_CCD_091817",
         "METAXML": "<xml></xml>",
         "GUID": "example_guid",
         "FILESIZE": "20000000000",

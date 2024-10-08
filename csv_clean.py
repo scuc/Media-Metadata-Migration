@@ -22,7 +22,7 @@ VIDEO_PATTERN_2 = (
 VIDEO_PATTERN_3 = r"(?<=[_-])(PATCH|MXF|MOV)(?=(-|_|[1-5])?)(?![A-Z])"
 VIDEO_PATTERN_4 = r"(?<![0-9A-Z])(?<=(-|_))(XDCAM|DNX(HD)?)(?=(-|_|[1-5]|HD)?)"
 VIDEO_PATTERN_5 = r"(?<![0-9A-Z])(?<=(-|_))(DV100|IMX50|CEM|CVM|SVM|PGS|DOLBY|PROMOSELECTS|CLEANCOVERS|CREDITPATCH|DELETEDSCENES)(?=(-|_|[1-5])?)"
-ARCHIVE_PATTERN = r"((?<![0-9A-Z])|(?<=(-|_)))(AVP|PPRO|FCP|PTS|AVP|GRFX|GFX|WAV|WAVS|SPLITS|GFXPACKAGE|GRAPHICS)(?=(-|_)?)(?![0-9A-Z])"
+ARCHIVE_PATTERN = r"((?<![0-9A-Z])|(?<=(-|_)))(AVP|PPRO|FCP|PTS|AVP|GRFX|GFX|WAV|WAVS|MDE|SPLITS|GFXPACKAGE|GRAPHICS)(?=(-|_)?)(?![0-9A-Z])"
 DOC_PATTERN = r"((?<![0-9]|[A-Za-z])|(?<=(-|_)))(Outgoing[-_]?(QC|UHD))(?=(-|_)?)"
 
 # Constants for abbreviations
@@ -143,7 +143,7 @@ def get_content_type_v(cleaned_name: str) -> Optional[str]:
 def get_content_type_a(cleaned_name: str) -> Optional[str]:
     match = re.search(ARCHIVE_PATTERN, cleaned_name, re.IGNORECASE)
     if match:
-        if match.group(0) in ["SPLITS", "WAVS"]:
+        if match.group(0) in ["SPLITS", "WAVS", "WAV", "MDE"]:
             return "WAV"
         elif match.group(0) in ["GFX", "GFXPACKAGE", "GRAPHICS"]:
             return "GRFX"

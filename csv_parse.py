@@ -32,8 +32,8 @@ include_patterns = [
 ]
 exclude_patterns = ["PGS", "SVM", "SDM", "CEM", "PROMO"]
 
-include_pattern = r"(?i)(?:[-_])(VM|EM|AVP|PPRO|FCP|PTS|GRFX|GFX|UHD|XDCAM|XDCAMHD|WAV|WAVS|OUTGOING)(?:[-_]|$)"
-exclude_pattern = r"(?i)(?:[-_])(PGS|SVM|SDM|CEM|PROMO|TACHYON)(?:[-_]|$)"
+include_pattern = r"(?:[-_])(VM|EM|AVP|PPRO|FCP|PTS|GRFX|GFX|UHD|XDCAM|XDCAMHD|WAV|WAVS|OUTGOING)(?:[-_]|$)"
+exclude_pattern = r"(?:[-_])(PGS|SVM|SDM|CEM|PROMO|TACHYON)(?:[-_]|$)"
 
 pattern = f"^(?!.*{exclude_pattern}).*{include_pattern}.*$"
 compiled_pattern = re.compile(pattern, re.IGNORECASE)
