@@ -20,12 +20,13 @@ VIDEO_PATTERN_2 = (
     r"(?<![0-9]|[A-Z])(?<=[-_])(SMLS|TXTLS|TXTD|CTC|HDR)(?=(-|_|[1-5])?)(?![A-Z])"
 )
 VIDEO_PATTERN_3 = r"(?<=[_-])(PATCH|MXF|MOV)(?=(-|_|[1-5])?)(?![A-Z])"
-VIDEO_PATTERN_4 = r"(?<![0-9A-Z])(?<=(-|_))(XDCAM|DNX(HD)?)(?=(-|_|[1-5]|HD)?)"
+VIDEO_PATTERN_4 = r"((?<=(-|_| ))(PRORES(HD)?|XDCAM(HD)?|DNX(HD)?)(?=(-|_|[1-5]|HD)?))"
 VIDEO_PATTERN_5 = r"(?<![0-9A-Z])(?<=(-|_))(DV100|IMX50|CEM|CVM|SVM|PGS|DOLBY|PROMOSELECTS|CLEANCOVERS|CREDITPATCH|DELETEDSCENES)(?=(-|_|[1-5])?)"
+VIDEO_PATTERN_6 = r"(?<![0-9A-Z])(?<=(-|_))(23(?:\.?98|\.?976|\.?97|\.?94)?|25|29(?:\.?97)?|59(?:\.?94)?|NTSC|PAL|24P|720P)(?=[IPip]?)(?=(-|_)?)"
 ARCHIVE_PATTERN = r"((?<![0-9A-Z])|(?<=(-|_)))(AVP|PPRO|FCP|PTS|AVP|GRFX|GFX|WAV|WAVS|MDE|SPLITS|GFXPACKAGE|GRAPHICS)(?=(-|_)?)(?![0-9A-Z])"
-DOC_PATTERN = r"((?<![0-9]|[A-Za-z])|(?<=(-|_)))(Outgoing[-_]?(QC|UHD))(?=(-|_)?)"
+DOC_PATTERN = r"((?<![0-9]|[A-Za-z])|(?<=(-|_)))(OUTGOING[-|_]?(QC|UHD)?)(?=(-|_)?)"
 
-# Constants for abbreviations
+# Constants for abbreviations11
 ABBREVIATIONS = {
     "PROMOSELECTS": "PSEL",
     "CLEANCOVERS": "CCOV",
@@ -90,6 +91,7 @@ def csv_clean(date: str, parsed_csv: Optional[str] = None) -> Tuple[str, str]:
             content_type_v = get_content_type_v(cleaned_name)
             content_type_a = get_content_type_a(cleaned_name)
             content_type_d = get_content_type_d(cleaned_name)
+            content_type_misc = get_content_type_misc(cleaned_name)
 
             if content_type_d:
                 set_document_info(df, index, cleaned_name)
@@ -108,7 +110,15 @@ def csv_clean(date: str, parsed_csv: Optional[str] = None) -> Tuple[str, str]:
                     content_type_a,
                     row["SOURCECREATEDT"],
                 )
+            elif (
+                content_type_misc
+                and not content_type_v
+                and not content_type_a
+                and not content_type_d
+            ):
+                set_video_info(df, index, row, cleaned_name, content_type_v)
             else:
+                logger.info(f"Cannot determine content type for: {cleaned_name}")
                 set_null_info(df, index, cleaned_name)
 
         df.drop("METAXML", axis=1, inplace=True)
@@ -157,6 +167,15 @@ def get_content_type_d(cleaned_name: str) -> Optional[str]:
         if re.search(DOC_PATTERN, cleaned_name, re.IGNORECASE)
         else None
     )
+
+
+def get_content_type_misc(cleaned_name: str) -> Optional[str]:
+    match = re.search(VIDEO_PATTERN_6, cleaned_name, re.IGNORECASE)
+    if match:
+        # match is treats file as video
+        return match.group(0)
+    else:
+        return "NULL"
 
 
 def set_document_info(df: pd.DataFrame, index: int, cleaned_name: str):
