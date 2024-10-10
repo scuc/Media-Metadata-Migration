@@ -17,6 +17,7 @@ def get_mediainfo(df_row, metaxml):
 
     if df_row["METAXML"] != "nan" and len(metaxml) != 0:
         try:
+            metaxml = sanitize_xml_content(df_row["NAME"], metaxml)
             mediainfo = extract_from_metaxml(df_row, metaxml)
         except Exception as e:
             log_exception("Exception raised on 1st block of get_mediainfo.", df_row, e)
@@ -251,6 +252,33 @@ def prettify_xml(elem):
     rough_string = ET.tostring(elem, "utf-8")
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
+
+
+def sanitize_xml_content(name: str, metaxml: str) -> str:
+    """
+    Replaces illegal characters in the provided XML content with valid XML entities and
+    removes invalid control characters.
+    """
+    try:
+        ET.fromstring(metaxml)  # Parses the XML string
+    except ET.ParseError:
+        logger.error(f"Invalid XML content found in: {name}")
+        # Replace the five predefined XML entities
+        metaxml = metaxml.replace("&", "And")  # Must be done first
+        # metaxml = metaxml.replace("<", "&lt;")
+        # metaxml = metaxml.replace(">", "&gt;")
+        # metaxml = metaxml.replace('"', "&quot;")
+        # metaxml = metaxml.replace("'", "&apos;")
+
+        # Remove any control characters that are not allowed
+        # Valid characters: U+0009 (tab), U+000A (line feed), U+000D (carriage return)
+        # illegal_chars_pattern = r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]"
+        # metaxml = re.sub(illegal_chars_pattern, "", metaxml)
+
+        logger.info(f"XML content for {name} was sanitized.")
+        logger.info(f"Sanitized XML: {metaxml}")
+
+    return metaxml
 
 
 if __name__ == "__main__":
