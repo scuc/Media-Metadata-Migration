@@ -10,6 +10,7 @@ import yaml
 import csv_clean
 import csv_parse
 import csv_clean_final
+import create_db
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ def main(csv_file: str) -> None:
     parsed_csv = csv_parse.parse_csv(date, csv_file)
     clean_csv = csv_clean.csv_clean(date, parsed_csv)
     clean_csv_final = csv_clean_final.csv_clean_final(date, clean_csv)
+    create_db.file_to_sqlite(clean_csv_final[1], "gorilla.db", "assets")
 
     complete_msg = f"\n\n{'='*25}  SCRIPT COMPLETE  {'='*25}"
     logger.info(complete_msg)
