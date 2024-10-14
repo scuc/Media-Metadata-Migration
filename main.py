@@ -11,6 +11,7 @@ import csv_clean
 import csv_parse
 import csv_clean_final
 import create_db
+import csv_chunk_final as chunk_csv
 
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ def main(csv_file: str) -> None:
     clean_csv = csv_clean.csv_clean(date, parsed_csv)
     clean_csv_final = csv_clean_final.csv_clean_final(date, clean_csv)
     create_db.file_to_sqlite(clean_csv_final[1], "gorilla.db", "assets")
+    chunk_csv.split_csv(clean_csv_final[0], "data_chunked", 20000)
 
     complete_msg = f"\n\n{'='*25}  SCRIPT COMPLETE  {'='*25}"
     logger.info(complete_msg)
