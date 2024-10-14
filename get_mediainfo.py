@@ -161,24 +161,27 @@ def get_framerate(df_row):
     )
 
     framerate_value = framerate_match.group(0) if framerate_match else "00"
-    framerate_map = {
-        "23": "23.98",
-        "23976": "23.976",
-        "2398": "23.98",
-        "24P": "24",
-        "25": "25",
-        "29": "29.97",
-        "2997": "29.97",
-        "59": "59.94",
-        "5994": "59.94",
-        "720P": "59.94",
-        "NTSC": "29.97",
-        "PAL": "25",
-    }
-    framerate = framerate_map.get(framerate_value, framerate_value)
-    logger.info(
-        f"{df_row['GUID']} - {df_row['NAME']} - Framerate {framerate} value based on filename."
-    )
+    if framerate_value:
+        framerate_map = {
+            "23": "23.98",
+            "23976": "23.976",
+            "2398": "23.98",
+            "24P": "24",
+            "25": "25",
+            "29": "29.97",
+            "2997": "29.97",
+            "59": "59.94",
+            "5994": "59.94",
+            "720P": "59.94",
+            "NTSC": "29.97",
+            "PAL": "25",
+        }
+        framerate = framerate_map.get(framerate_value, framerate_value)
+        logger.info(
+            f"{df_row['GUID']} - {df_row['NAME']} - Framerate {framerate} value based on filename."
+        )
+    else:
+        logger.info(f"Cannot determine framerate for {df_row['NAME']}, setting to 00.")
 
     return framerate
 

@@ -40,9 +40,12 @@ def csv_clean_final(date: str, cleaned_csv: Optional[str] = None) -> Tuple[str, 
         else:
             logger.info(f"Final Check for row {index} for {row['NAME']}")
             original_row = row.copy()
-            row = check_codec(row)
-            row = check_framerate(row, df)
-            row = check_resolution(row)
+            if pd.isnull(row["CODEC"]):
+                row = check_codec(row)
+            if pd.isnull(row["FRAMERATE"]):
+                row = check_framerate(row, df)
+            if pd.isnull(row["V_WIDTH"]) or pd.isnull(row["V_HEIGHT"]):
+                row = check_resolution(row)
 
             # Log changes
             log_changes(original_row, row, index)
@@ -102,7 +105,9 @@ def check_framerate(row, df):
     # logger.info(f"Checking framerate for {row['NAME']}")
     framerate_list = ["23.976", "23.98", "25", "29.97", "59.94"]
 
-    if row["TITLETYPE"] != "video" or str(row["FRAMERATE"]) in framerate_list:
+    if row["TITLETYPE"] != "video":
+        pass
+    if str(row["FRAMERATE"]) in framerate_list:
         logger.info(
             f"Skipping framerate check for {row['NAME']}, framerate is {row['FRAMERATE']}"
         )
@@ -110,6 +115,7 @@ def check_framerate(row, df):
 
     if (
         row["FRAMERATE"] == "NULL"
+        or row["FRAMERATE"] == "00"
         or pd.isnull(row["FRAMERATE"])
         or len(str(row["FRAMERATE"])) == 0
     ):
