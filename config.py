@@ -10,7 +10,7 @@ def get_config():
     """
     Setup configuration and credentials
     """
-    path = "/Users/cucos001/GitHub/Media-Asset-Migration/config.yaml"
+    path = "/Users/cucos001/GitHub/Media-Metadata-Migration/config.yaml"
 
     with open(path, "rt") as f:
         config = yaml.safe_load(f.read())
