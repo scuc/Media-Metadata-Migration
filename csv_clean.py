@@ -23,7 +23,7 @@ VIDEO_PATTERN_3 = r"(?<=[_-])(PATCH|MXF|MOV)(?=(-|_|[1-5])?)(?![A-Z])"
 VIDEO_PATTERN_4 = r"((?<=(-|_| ))(PRORES(HD)?|XDCAM(HD)?|DNX(HD)?)(?=(-|_|[1-5]|HD)?))"
 VIDEO_PATTERN_5 = r"(?<![0-9A-Z])(?<=(-|_))(DV100|IMX50|CEM|CVM|SVM|PGS|DOLBY|PROMOSELECTS|CLEANCOVERS|CREDITPATCH|DELETEDSCENES)(?=(-|_|[1-5])?)"
 VIDEO_PATTERN_6 = r"(?<![0-9A-Z])(?<=(-|_))(23(?:\.?98|\.?976|\.?97|\.?94)?|25|29(?:\.?97)?|59(?:\.?94)?|NTSC|PAL|24P|720P|1080)(?=[IPip]?)(?=(-|_)?)"
-MISC_VIDEO_PATTERN = r"(?<=(-|_))(CCOV|DSCN|PSEL|CREDP|CREDITPATCH(S)?|DELETEDSCENE(S)?|PROMOSELECT(S)?|PROMO|CLEANCOVER(S)?(S)?|CREDITPATCH(ES)?|DELETED|DELETEDSCENE(S)?|SCENE(S)?|CREDIT(S)?|FIX(ES)?)(?=(-|_)?)"
+MISC_VIDEO_PATTERN = r"(?:-|_)?(CCOV|DSCN|PSEL|CREDP|CREDITPATCH(?:S)?|DELETEDSCENE(?:S)?|PROMOSELECT(?:S)?|PROMO|SELECT(S)?|CLEANCOVER(?:S)?|CLEAN|CREDITPATCH(?:ES)?|DELETED|DELETEDSCENE(?:S)?|CREDIT(?:S)?|FIX(?:ES)?)|TEXTLESS|TEXTED|TXLS|TXTD(?:-|_)?"
 ARCHIVE_PATTERN = r"((?<=(-|_)))?(AVP|PPRO|FCP|PTS|AVP|GRFX|GFX|WAV|WAVS|MDE|SPLITS|GFXPACKAGE|GRAPHICS|MIXES|AUDIO)(?=(-|_)?)(?![0-9A-Z])"
 DOC_PATTERN = r"((?<![0-9]|[A-Za-z])|(?<=(-|_)))(OUTGOING[-|_]?(QC|UHD)?)(?=(-|_)?)"
 
@@ -118,10 +118,12 @@ def csv_clean(date: str, parsed_csv: Optional[str] = None) -> Tuple[str, str]:
                 and not content_type_d
             ):
                 logger.info(f"Miscellaneous content type: {content_type_misc}")
-                set_video_info(df, index, row, cleaned_name, content_type_v)
+                set_video_info(df, index, row, cleaned_name, content_type_misc)
             else:
                 logger.info(f"Cannot determine content type for: {cleaned_name}")
-                set_null_info(df, index, cleaned_name)
+                logger.info(f"Defaulting to video content for: {cleaned_name}")
+                logger.info(f"Checking for video metadata for: {cleaned_name}")
+                set_video_info(df, index, row, cleaned_name, content_type_misc)
 
         df.drop("METAXML", axis=1, inplace=True)
         df.to_csv(clean_csv)
@@ -172,16 +174,43 @@ def get_content_type_d(cleaned_name: str) -> Optional[str]:
 
 
 def get_content_type_misc(cleaned_name: str) -> Optional[str]:
+    """
+    Determine the miscellaneous content type from the cleaned name.
+
+    This function uses regular expressions to identify if the cleaned name
+    matches specific video patterns or miscellaneous patterns. If a match
+    is found for the video pattern, it returns True, indicating that the
+    file is treated as a video. If matches are found for miscellaneous
+    patterns, it collects and returns them as a list. If no matches are
+    found, it returns None.
+
+    Args:
+        cleaned_name (str): The cleaned name of the file to analyze.
+
+    Returns:
+        Optional[str]:
+            - True if the cleaned name matches the video pattern.
+            - A list of matched miscellaneous content types if found.
+            - None if no matches are found.
+    """
     match = re.search(VIDEO_PATTERN_6, cleaned_name, re.IGNORECASE)
-    match_misc = re.search(MISC_VIDEO_PATTERN, cleaned_name, re.IGNORECASE)
+    match_misc = re.finditer(MISC_VIDEO_PATTERN, cleaned_name, re.IGNORECASE)
+    match_group = []
     if match:
         # match is treats file as video
-        return match.group(0)
+        return True
     elif match_misc:
-        # match_misc treats file as miscellaneous video content
-        return match_misc.group(0)
+        # Iterate over each match and print the groups
+        for match in match_misc:
+            for group in match.groups():
+                if group is not None:
+                    match_group.append(group)
+                else:
+                    continue
+        ",".join(match_group)
+        return match_group
     else:
-        return "NULL"
+        return None
 
 
 def set_document_info(df: pd.DataFrame, index: int, cleaned_name: str):
@@ -192,7 +221,7 @@ def set_document_info(df: pd.DataFrame, index: int, cleaned_name: str):
 
 
 def set_video_info(
-    df: pd.DataFrame, index: int, row: pd.Series, cleaned_name: str, content_type_v: str
+    df: pd.DataFrame, index: int, row: pd.Series, cleaned_name: str, content_type: str
 ):
     df.at[index, "TITLETYPE"] = "video"
     mediainfo = gmi.get_mediainfo(row, row["METAXML"])
@@ -200,7 +229,7 @@ def set_video_info(
     logger.info(f"MEDIA-INFO: {mediainfo}")
 
     if mediainfo:
-        df.at[index, "CONTENT_TYPE"] = content_type_v
+        df.at[index, "CONTENT_TYPE"] = content_type
         df.at[index, "FRAMERATE"] = mediainfo["framerate"]
         df.at[index, "CODEC"] = mediainfo["codec"]
         df.at[index, "V_WIDTH"] = mediainfo["resolution"][0]
@@ -208,7 +237,7 @@ def set_video_info(
         df.at[index, "DURATION_MS"] = mediainfo["duration_ms"]
         df.at[index, "FILENAME"] = mediainfo["filename"]
     else:
-        df.at[index, "CONTENT_TYPE"] = content_type_v
+        df.at[index, "CONTENT_TYPE"] = content_type
         set_null_mediainfo(df, index)
 
     return
