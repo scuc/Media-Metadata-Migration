@@ -22,9 +22,10 @@ VIDEO_PATTERN_2 = (
 VIDEO_PATTERN_3 = r"(?<=[_-])(PATCH|MXF|MOV)(?=(-|_|[1-5])?)(?![A-Z])"
 VIDEO_PATTERN_4 = r"((?<=(-|_| ))(PRORES(HD)?|XDCAM(HD)?|DNX(HD)?)(?=(-|_|[1-5]|HD)?))"
 VIDEO_PATTERN_5 = r"(?<![0-9A-Z])(?<=(-|_))(DV100|IMX50|CEM|CVM|SVM|PGS|DOLBY|PROMOSELECTS|CLEANCOVERS|CREDITPATCH|DELETEDSCENES)(?=(-|_|[1-5])?)"
-VIDEO_PATTERN_6 = r"(?<![0-9A-Z])(?<=(-|_))(23(?:\.?98|\.?976|\.?97|\.?94)?|25|29(?:\.?97)?|59(?:\.?94)?|NTSC|PAL|24P|720P|1080)(?=[IPip]?)(?=(-|_)?)"
-MISC_VIDEO_PATTERN = r"(?:-|_)?(CCOV|DSCN|PSEL|CREDP|CREDITPATCH(?:S)?|DELETEDSCENE(?:S)?|PROMOSELECT(?:S)?|PROMO|SELECT(S)?|CLEANCOVER(?:S)?|CLEAN|CREDITPATCH(?:ES)?|DELETED|DELETEDSCENE(?:S)?|CREDIT(?:S)?|FIX(?:ES)?)|TEXTLESS|TEXTED|TXLS|TXTD(?:-|_)?"
-ARCHIVE_PATTERN = r"((?<=(-|_)))?(AVP|PPRO|FCP|PTS|AVP|GRFX|GFX|WAV|WAVS|MDE|SPLITS|GFXPACKAGE|GRAPHICS|MIXES|AUDIO)(?=(-|_)?)(?![0-9A-Z])"
+# VIDEO_PATTERN_6 = r"(?<![0-9A-Z])(?<=(-|_))(23(?:\.?98|\.?976|\.?97|\.?94)?|25|29(?:\.?97)?|59(?:\.?94)?|NTSC|PAL|24P|720P|1080)(?=[IPip]?)(?=(-|_)?)"
+MISC_VIDEO_PATTERN = r"(CCOV|DSCN|PSEL|CREDP|DELETEDSCENE(?:S)?|PROMOSELECT(?:S)?|PROMO|SELECT(S)?|CLEAN(?:\ )?COVER(?:S)?|CLEAN|CREDIT(?:\ )?PATCH(?:ES)?|PATCH(?: ES)?|CREDIT(?:S)?|DELETED(?:\ )?SCENE(?:S)?|DELETED|FIX(?:ES)?)|TEXTLESS|TEXTED|TXLS|TXTD|BEHIND(?:\ )?THE(?:\ )?SCENE(?:\S)?"
+
+ARCHIVE_PATTERN = r"((?<=(-|_)))?(AVP|PPRO|FCP|PTS|AVP|GRFX|GFX|WAV|WAVS|MDE|SPLITS|GFXPACKAGE|GRAPHICS|MIXES|AUDIO|STEMS|5\.1)(?=(-|_)?)(?![0-9A-Z])"
 DOC_PATTERN = r"((?<![0-9]|[A-Za-z])|(?<=(-|_)))(OUTGOING[-|_]?(QC|UHD)?)(?=(-|_)?)"
 
 # Constants for abbreviations11
@@ -157,7 +158,16 @@ def get_content_type_v(cleaned_name: str) -> Optional[str]:
 def get_content_type_a(cleaned_name: str) -> Optional[str]:
     match = re.search(ARCHIVE_PATTERN, cleaned_name, re.IGNORECASE)
     if match:
-        if match.group(0) in ["SPLITS", "WAVS", "WAV", "MDE", "MIXES", "AUDIO"]:
+        if match.group(0) in [
+            "SPLITS",
+            "WAVS",
+            "WAV",
+            "MDE",
+            "MIXES",
+            "AUDIO",
+            "STEMS",
+            "5.1",
+        ]:
             return "WAV"
         elif match.group(0) in ["GFX", "GFXPACKAGE", "GRAPHICS"]:
             return "GRFX"
@@ -176,41 +186,12 @@ def get_content_type_d(cleaned_name: str) -> Optional[str]:
 def get_content_type_misc(cleaned_name: str) -> Optional[str]:
     """
     Determine the miscellaneous content type from the cleaned name.
-
-    This function uses regular expressions to identify if the cleaned name
-    matches specific video patterns or miscellaneous patterns. If a match
-    is found for the video pattern, it returns True, indicating that the
-    file is treated as a video. If matches are found for miscellaneous
-    patterns, it collects and returns them as a list. If no matches are
-    found, it returns None.
-
-    Args:
-        cleaned_name (str): The cleaned name of the file to analyze.
-
-    Returns:
-        Optional[str]:
-            - True if the cleaned name matches the video pattern.
-            - A list of matched miscellaneous content types if found.
-            - None if no matches are found.
     """
-    match = re.search(VIDEO_PATTERN_6, cleaned_name, re.IGNORECASE)
     match_misc = re.finditer(MISC_VIDEO_PATTERN, cleaned_name, re.IGNORECASE)
-    match_group = []
-    if match:
-        # match is treats file as video
-        return True
-    elif match_misc:
-        # Iterate over each match and print the groups
-        for match in match_misc:
-            for group in match.groups():
-                if group is not None:
-                    match_group.append(group)
-                else:
-                    continue
-        ",".join(match_group)
-        return match_group
-    else:
-        return None
+    matches = [match.group(0) for match in match_misc if match is not None]
+    logger.info(f"Matches for {cleaned_name}:  {matches}")
+
+    return ",".join(matches) if matches else None
 
 
 def set_document_info(df: pd.DataFrame, index: int, cleaned_name: str):
