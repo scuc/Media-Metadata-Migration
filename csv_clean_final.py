@@ -61,6 +61,41 @@ def csv_clean_final(date: str, cleaned_csv: Optional[str] = None) -> Tuple[str, 
     return clean_csv_final, os.path.join(csv_path, clean_csv_final)
 
 
+def clean_content_type(row):
+    content_type_mappings = {
+        "PROMOSELECTS": "PSEL",
+        "PROMO": "PSEL",
+        "PROMOS": "PSEL",
+        "SELECTS": "PSEL",
+        "CLEANCOVERS": "CCOV",
+        "CLEAN": "CCOV",
+        "COVERS": "CCOV",
+        "COVER": "CCOV",
+        "BEHINDTHESCENES": "BTS",
+        "BEHINDTHESCENE": "BTS",
+        "BEHIND THE SCENES": "BTS",
+        "BEHIND THE SCENE": "BTS",
+        "PATCH": "PATCH",
+        "FIX": "PATCH",
+        "FIXES": "PATCH",
+        "CREDIT PATCH": "CREDITS",
+        "CREDITS": "CREDITS",
+        "CREDP": "CREDITS",
+        "DELETED": "DSCN",
+        "DELETED SCENES": "DSCN",
+        "DELETEDSCENES": "DSCN",
+        "DELETED SCENE": "DSCN",
+        "DELETEDSCENE": "DSCN",
+    }
+
+    updated_ctype = []
+    for ctype in row["CONTENT_TYPE"].split(","):
+        ctype_upper = ctype.strip().upper()
+        updated_ctype.append(content_type_mappings.get(ctype_upper, ctype_upper))
+
+    return ",".join(updated_ctype)
+
+
 def log_changes(original_row, updated_row, index):
     changes = []
     for col in original_row.index:
