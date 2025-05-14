@@ -1,6 +1,6 @@
 # Specify filepatterns you want git to ignore.
-
-*/*
+/logs/*
+/data*
 *.db
 config.yaml
 .DS_Store
