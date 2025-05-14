@@ -26,10 +26,18 @@ def add_cf_output_dir_column(input_file, output_file=None):
     print(f"Reading Excel file: {input_file}")
     df = pd.read_excel(input_file)
 
+    # Print columns to help debug
+    print(f"Columns in input file: {df.columns.tolist()}")
+
     # Check if necessary columns exist
     if "TITLETYPE" not in df.columns:
-        print("Warning: TITLETYPE column not found in the Excel file.")
-        return df
+        print(
+            "Warning: TITLETYPE column not found in the Excel file. Creating it as an empty column."
+        )
+        # Create TITLETYPE column if it doesn't exist
+        df["TITLETYPE"] = ""
+    else:
+        print("Found TITLETYPE column in the input file.")
 
     if "CONTENT_TYPE" not in df.columns:
         print("Warning: CONTENT_TYPE column not found in the Excel file.")
@@ -52,13 +60,13 @@ def add_cf_output_dir_column(input_file, output_file=None):
         elif title_type == "document":
             return "document"
         elif title_type == "graphic":
-            return "package"
+            return "project"  # Changed from "package" to "project"
         elif title_type == "archive":
             # Exact matches first
             if content_type in project_content_types:
                 return "project"
             elif content_type == "GRFX":
-                return "package"
+                return "project"  # Changed from "package" to "project"
             # Then partial matches
             elif "WAV" in content_type:
                 return "audio"
@@ -66,7 +74,7 @@ def add_cf_output_dir_column(input_file, output_file=None):
             elif any(proj_type in content_type for proj_type in project_content_types):
                 return "project"
             elif "GRFX" in content_type:
-                return "package"
+                return "project"  # Changed from "package" to "project"
 
         # Additional flexible rule checks for ANY title_type (not just archive)
         # This catches files that might have been miscategorized
@@ -84,7 +92,7 @@ def add_cf_output_dir_column(input_file, output_file=None):
             or "JPG" in content_type
             or "TIFF" in content_type
         ):
-            return "package"
+            return "project"  # Changed from "package" to "project"
 
         # Default value if no rules match
         return "unknown"
@@ -127,10 +135,51 @@ def add_cf_output_dir_column(input_file, output_file=None):
             if "NAME" in df.columns:
                 print(f"    NAME: {row['NAME']}")
 
+    # Print columns before saving to verify all columns are present
+    print(f"Columns to be saved: {df.columns.tolist()}")
+
+    # IMPORTANT: Make sure the original TITLETYPE column is preserved
+    # Even if it's not in the source Excel (but used in the script logic)
+    if "TITLETYPE" not in df.columns:
+        # Recreate TITLETYPE column based on the already determined rules in reverse
+        print(
+            "TITLETYPE column is missing! Adding it back based on CF_OUTPUT_DIR values"
+        )
+        df["TITLETYPE"] = ""
+
+        # Set TITLETYPE values based on CF_OUTPUT_DIR (simplified mapping)
+        title_type_map = {
+            "video": "Video",
+            "document": "Document",
+            "project": "graphic",  # Updated from "package": "graphic"
+            "audio": "archive",  # Best guess based on rules
+        }
+
+        for output_dir, title_type in title_type_map.items():
+            df.loc[df["CF_OUTPUT_DIR"] == output_dir, "TITLETYPE"] = title_type
+
     # Save to output file if specified
     if output_file:
         print(f"\nSaving updated data to: {output_file}")
+
+        # Explicitly ensure the TITLETYPE column is preserved
+        if "TITLETYPE" in df.columns:
+            print("TITLETYPE column is present and will be included in the output")
+        else:
+            print("WARNING: TITLETYPE column is missing from the DataFrame!")
+
+        # Save the DataFrame to Excel
         df.to_excel(output_file, index=False)
+
+        # Verify output file by reading it back
+        if os.path.exists(output_file):
+            verify_df = pd.read_excel(output_file)
+            print(f"Columns in output file: {verify_df.columns.tolist()}")
+            if "TITLETYPE" in verify_df.columns:
+                print("SUCCESS: TITLETYPE column is present in the output file")
+            else:
+                print("ERROR: TITLETYPE column is missing from the output file!")
+
         print(f"File saved successfully!")
 
     return df
@@ -159,12 +208,16 @@ def main():
     print(f"The new column has been determined based on the following rules:")
     print("  - TitleType: Video → CF_OUTPUT_DIR = video")
     print("  - TitleType: Document → CF_OUTPUT_DIR = document")
-    print("  - TitleType: graphic → CF_OUTPUT_DIR = package")
+    print(
+        "  - TitleType: graphic → CF_OUTPUT_DIR = project"
+    )  # Updated from package to project
     print(
         "  - TitleType: archive & Content_Type in [AVP, FCP, PPRO, PTS] → CF_OUTPUT_DIR = project"
     )
     print("  - TitleType: archive & Content_Type contains WAV → CF_OUTPUT_DIR = audio")
-    print("  - TitleType: archive & Content_Type = GRFX → CF_OUTPUT_DIR = package")
+    print(
+        "  - TitleType: archive & Content_Type = GRFX → CF_OUTPUT_DIR = project"
+    )  # Updated from package to project
     print("\nAdditional flexible rules applied to reduce 'unknown' values:")
     print(
         "  - Content_Type contains any of [AVP, FCP, PPRO, PTS] → CF_OUTPUT_DIR = project"
@@ -172,7 +225,9 @@ def main():
     print("  - Content_Type contains WAV or AUDIO → CF_OUTPUT_DIR = audio")
     print("  - Content_Type contains VIDEO, MOV, MP4 → CF_OUTPUT_DIR = video")
     print("  - Content_Type contains DOC, PDF, TXT → CF_OUTPUT_DIR = document")
-    print("  - Content_Type contains GRFX, PNG, JPG, TIFF → CF_OUTPUT_DIR = package")
+    print(
+        "  - Content_Type contains GRFX, PNG, JPG, TIFF → CF_OUTPUT_DIR = project"
+    )  # Updated from package to project
 
 
 if __name__ == "__main__":
